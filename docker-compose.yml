@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      internal:
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: artem
+      POSTGRES_PASSWORD: test123
+      POSTGRES_DB: SCA
+    healthcheck:
+      test: pg_isready -U $$POSTGRES_USER
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      internal:
+
+volumes:
+  db_data:
+
+networks:
+  internal:
