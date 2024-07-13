@@ -1,16 +1,66 @@
 package logger
 
 import (
+	"bytes"
 	"github.com/gin-gonic/gin"
-	"log"
-	"time"
+	"github.com/sirupsen/logrus"
+	"io"
 )
 
-func Logger() gin.HandlerFunc {
+// Request logger middleware
+type requestLogger struct {
+	rc io.ReadCloser
+	w  io.Writer
+}
+
+func (rc *requestLogger) Read(p []byte) (n int, err error) {
+	n, err = rc.rc.Read(p)
+	if n > 0 {
+		if n, err := rc.w.Write(p[:n]); err != nil {
+			return n, err
+		}
+	}
+	return n, err
+}
+
+func (rc *requestLogger) Close() error {
+	return rc.rc.Close()
+}
+
+func RequestLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		start := time.Now()
+		buf := bytes.Buffer{}
+		body := &requestLogger{c.Request.Body, &buf}
+		c.Request.Body = body
 		c.Next()
-		duration := time.Since(start)
-		log.Printf("%s %s %s %d %s", c.Request.Method, c.Request.URL.Path, c.Request.Proto, c.Writer.Status(), duration)
+		if buf.Len() > 0 {
+			logrus.Println(map[string]string{
+				"request": buf.String(),
+			})
+		}
+	}
+}
+
+// Response logger middleware
+type responseLogger struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func (w responseLogger) Write(b []byte) (int, error) {
+	w.body.Write(b)
+	return w.ResponseWriter.Write(b)
+}
+
+func ResponseLogger() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		buf := &responseLogger{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+		c.Writer = buf
+		c.Next()
+		if buf.body.Len() > 0 {
+			logrus.Println(map[string]string{
+				"response": buf.body.String(),
+			})
+		}
 	}
 }

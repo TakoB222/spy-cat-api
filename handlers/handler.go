@@ -21,7 +21,8 @@ func (h *Handler) Init() *gin.Engine {
 
 	router.Use(
 		gin.Recovery(),
-		logger.Logger(),
+		logger.RequestLogger(),
+		logger.ResponseLogger(),
 	)
 
 	router.GET("/ping", func(ctx *gin.Context) {
