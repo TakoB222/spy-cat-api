@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
 	"spy-cat-api/env"
 
 	"spy-cat-api/middleware/logger"
@@ -24,11 +23,6 @@ func (h *Handler) Init() *gin.Engine {
 		logger.RequestLogger(),
 		logger.ResponseLogger(),
 	)
-
-	router.GET("/ping", func(ctx *gin.Context) {
-		ctx.String(http.StatusOK, "pong")
-	})
-
 	h.initAPI(router)
 
 	return router

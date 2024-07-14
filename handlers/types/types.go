@@ -21,3 +21,7 @@ type UpdateTargetRequest struct {
 	Completed bool   `json:"completed"`
 	Notes     string `json:"notes"`
 }
+
+type AssignToMissionRequest struct {
+	CatID uint `json:"cat_id" `
+}

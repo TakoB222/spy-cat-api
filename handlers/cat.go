@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"spy-cat-api/handlers/helper"
@@ -23,60 +25,77 @@ func (h *Handler) initCatRoutes(group *gin.RouterGroup) {
 func (h *Handler) CreateCat(c *gin.Context) {
 	var cat models.Cat
 	if err := c.ShouldBindJSON(&cat); err != nil {
-		helper.NewResponse(c, http.StatusBadRequest, "filed unmarshal request")
+		helper.Error(c, http.StatusBadRequest, fmt.Errorf("failed unmarshal request: %v", err))
 		return
 	}
 
 	if !utils.ValidateCatBreed(cat.Breed) {
-		helper.NewResponse(c, http.StatusBadRequest, "invalid cat breed")
+		helper.Error(c, http.StatusBadRequest, errors.New("invalid cat breed"))
 		return
 	}
 
 	if err := h.env.Storage.Create(&cat).Error; err != nil {
-		helper.NewResponse(c, http.StatusInternalServerError, err.Error())
+		helper.CriticalError(c, err)
+		return
 	}
-	c.JSON(http.StatusOK, cat)
+	helper.Ok(c, cat)
 }
 
 func (h *Handler) GetCats(c *gin.Context) {
 	var cats []models.Cat
 	h.env.Storage.Find(&cats)
-	c.JSON(http.StatusOK, cats)
+	helper.Ok(c, cats)
 }
 
 func (h *Handler) GetCat(c *gin.Context) {
 	id := c.Param("id")
 	var cat models.Cat
 	if err := h.env.Storage.First(&cat, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, nil)
+		if models.IsErrorNotFound(err) {
+			helper.Error(c, http.StatusNotFound, nil)
+			return
+		}
+		helper.CriticalError(c, err)
+		return
 	}
-	c.JSON(http.StatusOK, cat)
+	helper.Ok(c, cat)
 }
 
 func (h *Handler) UpdateCat(c *gin.Context) {
 	id := c.Param("id")
 	var cat models.Cat
 	if err := h.env.Storage.First(&cat, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, nil)
+		if models.IsErrorNotFound(err) {
+			helper.Error(c, http.StatusNotFound, nil)
+			return
+		}
+		helper.CriticalError(c, err)
+		return
 	}
 
 	var input types.UpdateCatRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
-		helper.NewResponse(c, http.StatusBadRequest, "filed unmarshal request")
+		helper.Error(c, http.StatusBadRequest, fmt.Errorf("failed unmarshal request: %v", err))
 		return
 	}
 	if err := input.Validate(); err != nil {
-		helper.NewResponse(c, http.StatusBadRequest, err.Error())
+		helper.Error(c, http.StatusBadRequest, err)
+		return
 	}
 
 	h.env.Storage.Model(&cat).Updates(input)
-	c.JSON(http.StatusOK, cat)
+	helper.Ok(c, cat)
 }
 
 func (h *Handler) DeleteCat(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.env.Storage.Delete(&models.Cat{}, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, nil)
+		if models.IsErrorNotFound(err) {
+			helper.Error(c, http.StatusNotFound, nil)
+			return
+		}
+		helper.CriticalError(c, err)
+		return
 	}
-	c.JSON(http.StatusOK, nil)
+	helper.Ok(c, nil)
 }

@@ -2,15 +2,25 @@ package helper
 
 import (
 	"github.com/gin-gonic/gin"
-
-	"spy-cat-api/pkg/logger"
+	"net/http"
 )
 
-type response struct {
-	Message string `json:"message"`
+func base(c *gin.Context, statusCode int, body interface{}) {
+	if body == nil {
+		c.JSON(statusCode, nil)
+	} else {
+		c.JSON(statusCode, body)
+	}
 }
 
-func NewResponse(ctx *gin.Context, statusCode int, message string) {
-	logger.Error(message)
-	ctx.AbortWithStatusJSON(statusCode, response{message})
+func CriticalError(c *gin.Context, err error) {
+	base(c, http.StatusInternalServerError, err.Error())
+}
+
+func Error(c *gin.Context, statusCode int, err error) {
+	base(c, statusCode, err)
+}
+
+func Ok(c *gin.Context, v interface{}) {
+	base(c, http.StatusOK, v)
 }

@@ -86,7 +86,18 @@
 					"name": "Get missions",
 					"request": {
 						"method": "GET",
-						"header": []
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/api/missions",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"missions"
+							]
+						}
 					},
 					"response": []
 				},
@@ -132,6 +143,14 @@
 				},
 				{
 					"name": "Delete target",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "Assign to mission",
 					"request": {
 						"method": "GET",
 						"header": []
